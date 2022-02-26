@@ -1,5 +1,6 @@
 import pygame
 import pygame_gui
+from random import randint
 import sys
 import os
 
@@ -102,13 +103,32 @@ class Ball(pygame.sprite.Sprite):
                            (self.radius, self.radius), self.radius)
         self.rect = self.image.get_rect().move(0, 0)
         self.mask = pygame.mask.from_surface(self.image)
+        self.vx = randint(-4, 4)
+        self.vy = randint(1, 4)
 
     def update(self, *args):
-        if not pygame.sprite.collide_mask(self, player):
-            self.rect.y += 4
-        else:
-            if abs(self.rect.x - player.rect.x) > 15:
-                self.rect.y += 4
+        if args and args[0] == 'move':
+            if not pygame.sprite.collide_mask(self, player):
+                if (self.rect.x <= 0 and self.vx < 0) or\
+                        (self.rect.x + 2 * self.radius >= WIDTH and self.vx > 0):
+                    self.vx *= -1
+                if self.rect.y >= HEIGHT:
+                    all_sprites.remove(self)
+                    return
+                self.rect.y += self.vy
+                self.rect.x += self.vx
+            else:
+                if player.rect.x - self.rect.x > self.radius:
+                    if self.vx > 0:
+                        self.vx *= -1
+                    self.rect.x += self.vx
+                    self.rect.y += self.vy
+                elif self.rect.x - player.rect.x - player.rect.width > self.radius:
+                    if self.vx < 0:
+                        self.vx *= -1
+                    self.rect.x += self.vx
+                    self.rect.y += self.vy
+
 
 def draw(screen):
     screen.fill((0, 0, 0))
@@ -136,4 +156,6 @@ while True:
     all_sprites.draw(screen)
     player_group.draw(screen)
     pygame.display.flip()
+    if len(all_sprites) == 0:
+        Ball()
     clock.tick(FPS)
