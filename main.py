@@ -66,8 +66,9 @@ def start_screen():
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
-        super().__init__(player_group, all_sprites)
+        super().__init__(player_group)
         self.image = pygame.transform.scale(load_image('bucket.png', -1), (50, 60))
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect().move(100, 800)
         self.move_left = 0
         self.move_right = 0
@@ -99,10 +100,15 @@ class Ball(pygame.sprite.Sprite):
                                     pygame.SRCALPHA, 32)
         pygame.draw.circle(self.image, pygame.Color("red"),
                            (self.radius, self.radius), self.radius)
-        self.rect = self.image.get_rect().move(100, 100)
+        self.rect = self.image.get_rect().move(0, 0)
+        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self, *args):
-        self.rect.y += 4
+        if not pygame.sprite.collide_mask(self, player):
+            self.rect.y += 4
+        else:
+            if abs(self.rect.x - player.rect.x) > 15:
+                self.rect.y += 4
 
 def draw(screen):
     screen.fill((0, 0, 0))
@@ -114,7 +120,7 @@ start_screen()
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 
-Player()
+player = Player()
 Ball()
 
 fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
@@ -123,8 +129,11 @@ while True:
         if event.type == pygame.QUIT:
             terminate()
         all_sprites.update(event)
+        player_group.update(event)
     all_sprites.update('move')
+    player_group.update('move')
     draw(screen)
     all_sprites.draw(screen)
+    player_group.draw(screen)
     pygame.display.flip()
     clock.tick(FPS)
