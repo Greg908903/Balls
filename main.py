@@ -3,11 +3,15 @@ import pygame_gui
 from random import randint
 import sys
 import os
+from datetime import datetime
+
+start_time = datetime.now()
 
 FPS = 50
 
 pygame.init()
 size = WIDTH, HEIGHT = 700, 1000
+score = 0
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
 manager = pygame_gui.UIManager((WIDTH, HEIGHT))
@@ -39,16 +43,17 @@ def show_statistic():
     pass
 
 def start_screen():
-
+    global start_time
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
-    start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((342, 300), (150, 75)),
+    start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 300), (150, 75)),
                                                 text='Начать игру',
                                                 manager=manager)
-    # statistic_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((342, 400), (150, 75)),
-    #                                             text='Статистика',
-    #                                             manager=manager)
-
+    modes = ['На время', 'Бесконечный']
+    cnt_mode = 0
+    mode_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 380), (150, 75)),
+                                                text=modes[cnt_mode],
+                                                manager=manager)
     while True:
         time_delta = clock.tick(60) / 1000.0
         for event in pygame.event.get():
@@ -56,7 +61,12 @@ def start_screen():
                 terminate()
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == start_button:
-                    return
+                    start_time = datetime.now()
+                    return modes[cnt_mode]
+                if event.ui_element == mode_button:
+                    cnt_mode += 1
+                    cnt_mode %= len(modes)
+                    mode_button.set_text(modes[cnt_mode])
             manager.process_events(event)
 
         manager.update(time_delta)
@@ -76,10 +86,20 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, *args):
         if args and args[0] == 'move':
+            past_rect = self.rect.copy()
             if self.move_left:
                 self.rect.x -= 3
             if self.move_right:
                 self.rect.x += 3
+            tmp = pygame.sprite.spritecollide(player, all_sprites, collided=pygame.sprite.collide_mask, dokill=False)
+            if tmp:
+                if self.rect != past_rect:
+                    self.rect = past_rect
+                elif not player.rect.y > tmp[0].rect.y:
+                    if tmp[0].rect.x < player.rect.x:
+                        self.rect.x += 3
+                    else:
+                        self.rect.x -= 3
             return
         if args and args[0].type == pygame.KEYDOWN:
             if args[0].key == pygame.K_LEFT:
@@ -107,6 +127,7 @@ class Ball(pygame.sprite.Sprite):
         self.vy = randint(1, 4)
 
     def update(self, *args):
+        global score
         if args and args[0] == 'move':
             if not pygame.sprite.collide_mask(self, player):
                 if (self.rect.x <= 0 and self.vx < 0) or\
@@ -123,19 +144,32 @@ class Ball(pygame.sprite.Sprite):
                         self.vx *= -1
                     self.rect.x += self.vx
                     self.rect.y += self.vy
-                elif self.rect.x - player.rect.x - player.rect.width > self.radius:
+                elif (player.rect.x + player.rect.width) - self.rect.x < self.radius:
                     if self.vx < 0:
                         self.vx *= -1
                     self.rect.x += self.vx
                     self.rect.y += self.vy
+                elif self.rect.y < player.rect.y:
+                    score += abs(self.vx) + abs(self.vy)
+                    all_sprites.remove(self)
+
+
+def final_screen():
+    pass
 
 
 def draw(screen):
     screen.fill((0, 0, 0))
     screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 50)
+    text = font.render(str(score), True, (100, 255, 100))
+    screen.blit(text, (0, 0))
+    if mode == 'На время':
+        text = font.render(str(120 - (datetime.now() - start_time).seconds), True, (100, 255, 100))
+        screen.blit(text, (WIDTH - text.get_width(), 0))
 
 
-start_screen()
+mode = start_screen()
 
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
@@ -159,3 +193,5 @@ while True:
     if len(all_sprites) == 0:
         Ball()
     clock.tick(FPS)
+    if mode == 'На время' and (datetime.now() - start_time).seconds >= 120:
+        final_screen()
