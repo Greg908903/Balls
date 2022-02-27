@@ -3,6 +3,7 @@ import pygame_gui
 from random import randint
 import sys
 import os
+import sqlite3
 
 FPS = 50
 
@@ -35,11 +36,38 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+
 def show_statistic():
-    pass
+    con = sqlite3.connect('my_tries.sql.db')
+    cur = con.cursor()
+    scores = cur.execute('''SELECT score from information''').fetchall()
+    max_scores = []
+    for i in scores:
+        max_scores.append(*i)
+    max_score = max(max_scores)
+    font = pygame.font.Font(None, 50)
+    text = font.render(f"Ваш максимальный результат: {max_score}", True, (100, 255, 100))
+    text_x = 10
+    text_y = 50
+    screen.blit(text, (text_x, text_y))
+    count = int(cur.execute('''SELECT COUNT (*) from information''').fetchone()[0])
+    text_1 = font.render(f"Всего вы сделали {count} попыток", True, (100, 255, 100))
+    text_x1 = 10
+    text_y1 = 80
+    screen.blit(text_1, (text_x1, text_y1))
+    go_to_start = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((342, 300), (150, 75)),
+                                                text='Вернуться к началу игры',
+                                                manager=manager)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == go_to_start:
+                    start_screen()
+
 
 def start_screen():
-
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((342, 300), (150, 75)),
