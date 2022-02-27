@@ -42,17 +42,21 @@ def load_image(name, colorkey=None):
 
 
 def final_screen():
+    screen.fill('black')
+    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
     go_to_start = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 300), (150, 75)),
                                                 text='Вернуться к началу игры',
                                                 manager=manager)
     con = sqlite3.connect('my_tries.sql.db')
     cur = con.cursor()
     scores = cur.execute('''SELECT score from information''').fetchall()
+    print(scores)
     max_scores = []
     for i in scores:
         max_scores.append(*i)
     max_score = max(max_scores)
-    font = pygame.font.Font(None, 50)
+    font = pygame.font.Font(None, 20)
     text = font.render(f"Максимальное количество набранных очков: {max_score}", True, (100, 255, 100))
     text_x = 10
     text_y = 50
@@ -60,7 +64,7 @@ def final_screen():
     count = cur.execute('''SELECT COUNT (*) from information''').fetchone()[0]
     text_1 = font.render(f"Вы сделали {count} попыток", True, (100, 255, 100))
     text_x1 = 10
-    text_y1 = 50
+    text_y1 = 100
     screen.blit(text_1, (text_x1, text_y1))
     pygame.display.flip()
     while True:
@@ -219,5 +223,10 @@ while True:
     if len(all_sprites) == 0:
         Ball()
     clock.tick(FPS)
-    if mode == 'На время' and (datetime.now() - start_time).seconds >= 120:
+    if mode == 'На время' and (datetime.now() - start_time).seconds >= 3:
+        con = sqlite3.connect('my_tries.sql.db')
+        cur = con.cursor()
+        cur.execute('''INSERT INTO information(level, mode, score) VALUES (1, 1, ?)''', (score, ))
+        con.commit()
+        con.close()
         final_screen()
