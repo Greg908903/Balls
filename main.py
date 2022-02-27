@@ -4,6 +4,7 @@ from random import randint
 import sys
 import os
 from datetime import datetime
+import sqlite3
 
 start_time = datetime.now()
 
@@ -39,8 +40,37 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
-def show_statistic():
-    pass
+
+def final_screen():
+    go_to_start = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 300), (150, 75)),
+                                                text='Вернуться к началу игры',
+                                                manager=manager)
+    con = sqlite3.connect('my_tries.sql.db')
+    cur = con.cursor()
+    scores = cur.execute('''SELECT score from information''').fetchall()
+    max_scores = []
+    for i in scores:
+        max_scores.append(*i)
+    max_score = max(max_scores)
+    font = pygame.font.Font(None, 50)
+    text = font.render(f"Максимальное количество набранных очков: {max_score}", True, (100, 255, 100))
+    text_x = 10
+    text_y = 50
+    screen.blit(text, (text_x, text_y))
+    count = cur.execute('''SELECT COUNT (*) from information''').fetchone()[0]
+    text_1 = font.render(f"Вы сделали {count} попыток", True, (100, 255, 100))
+    text_x1 = 10
+    text_y1 = 50
+    screen.blit(text_1, (text_x1, text_y1))
+    pygame.display.flip()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == go_to_start:
+                    start_screen()
+
 
 def start_screen():
     global start_time
@@ -152,10 +182,6 @@ class Ball(pygame.sprite.Sprite):
                 elif self.rect.y < player.rect.y:
                     score += abs(self.vx) + abs(self.vy)
                     all_sprites.remove(self)
-
-
-def final_screen():
-    pass
 
 
 def draw(screen):
