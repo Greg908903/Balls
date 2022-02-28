@@ -1,6 +1,6 @@
 import pygame
 import pygame_gui
-from random import randint
+from random import randint, choice
 import sys
 import os
 from datetime import datetime
@@ -229,10 +229,12 @@ class Player(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites)
-        self.radius = 15
+        self.radius = randint(10, 20)
         self.image = pygame.Surface((2 * self.radius, 2 * self.radius),
                                     pygame.SRCALPHA, 32)
-        pygame.draw.circle(self.image, pygame.Color("red"),
+        colors = ['red', 'green', 'blue', 'pink', 'silver',
+                  'gold', 'brown', 'yellow']
+        pygame.draw.circle(self.image, pygame.Color(choice(colors)),
                            (self.radius, self.radius), self.radius)
         self.rect = self.image.get_rect().move(0, 0)
         self.mask = pygame.mask.from_surface(self.image)
@@ -266,7 +268,7 @@ class Ball(pygame.sprite.Sprite):
                     self.rect.x += self.vx
                     self.rect.y += self.vy
                 elif self.rect.y < player.rect.y:
-                    score += abs(self.vx) + abs(self.vy)
+                    score += (abs(self.vx) + abs(self.vy)) / (self.radius / 10)
                     score = round(score, 2)
                     all_sprites.remove(self)
 
@@ -320,7 +322,7 @@ while True:
                 pause_button.kill()
                 tmp = pause_screen()
                 if tmp is not None:
-                    mode, level, cnt_balls_tmp = start_screen()
+                    mode, level, cnt_balls_tmp = tmp
                     cnt_balls = how_much_balls(level, cnt_balls_tmp)
                     for i in all_sprites:
                         all_sprites.remove(i)
