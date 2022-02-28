@@ -18,6 +18,9 @@ clock = pygame.time.Clock()
 manager = pygame_gui.UIManager((WIDTH, HEIGHT))
 field = [[0] * 10 for i in range(10)]
 
+LEVELS = ['Легко', 'Средне', 'Сложно', 'Ввести количество шаров']
+MODES = ['На время', 'Бесконечный']
+TIME = 10
 
 def terminate():
     pygame.quit()
@@ -42,10 +45,12 @@ def load_image(name, colorkey=None):
 
 
 def final_screen():
+    global score
+    score = 0
     screen.fill('black')
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
-    go_to_start = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 300), (150, 75)),
+    go_to_start = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 125, 300), (250, 75)),
                                                 text='Вернуться к началу игры',
                                                 manager=manager)
     con = sqlite3.connect('my_tries.sql.db')
@@ -67,13 +72,20 @@ def final_screen():
     text_y1 = 100
     screen.blit(text_1, (text_x1, text_y1))
     pygame.display.flip()
+    time_delta = clock.tick(FPS) / 1000.0
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == go_to_start:
-                    start_screen()
+                    go_to_start.kill()
+                    return start_screen()
+            manager.process_events(event)
+        manager.update(time_delta)
+        manager.draw_ui(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
 def start_screen():
@@ -83,24 +95,44 @@ def start_screen():
     start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 300), (150, 75)),
                                                 text='Начать игру',
                                                 manager=manager)
-    modes = ['На время', 'Бесконечный']
     cnt_mode = 0
     mode_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 380), (150, 75)),
-                                                text=modes[cnt_mode],
+                                                text=MODES[cnt_mode],
                                                 manager=manager)
+    cnt_level = 0
+    level_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 460), (150, 75)),
+                                               text=LEVELS[cnt_level],
+                                               manager=manager)
+    inp_cnt_balls = pygame_gui.elements.UITextEntryLine(relative_rect=pygame.Rect((WIDTH // 2 + 80, 460), (150, 75)),
+                                                        manager=manager)
+    time_delta = clock.tick(FPS) / 1000.0
     while True:
-        time_delta = clock.tick(60) / 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == start_button:
                     start_time = datetime.now()
-                    return modes[cnt_mode]
+                    start_button.kill()
+                    level_button.kill()
+                    mode_button.kill()
+                    inp_cnt_balls.kill()
+                    try:
+                        if cnt_level == 3:
+                            return MODES[cnt_mode], LEVELS[cnt_level], int(inp_cnt_balls.get_text())
+                        else:
+                            return MODES[cnt_mode], LEVELS[cnt_level], inp_cnt_balls.get_text()
+                    except ValueError:
+                        print('Целое неотрицательное количество шаров')
+                        terminate()
                 if event.ui_element == mode_button:
                     cnt_mode += 1
-                    cnt_mode %= len(modes)
-                    mode_button.set_text(modes[cnt_mode])
+                    cnt_mode %= len(MODES)
+                    mode_button.set_text(MODES[cnt_mode])
+                if event.ui_element == level_button:
+                    cnt_level += 1
+                    cnt_level %= len(LEVELS)
+                    level_button.set_text(LEVELS[cnt_level])
             manager.process_events(event)
 
         manager.update(time_delta)
@@ -157,8 +189,11 @@ class Ball(pygame.sprite.Sprite):
                            (self.radius, self.radius), self.radius)
         self.rect = self.image.get_rect().move(0, 0)
         self.mask = pygame.mask.from_surface(self.image)
-        self.vx = randint(-4, 4)
-        self.vy = randint(1, 4)
+        self.vx = 0
+        self.vy = 0
+        while abs(self.vx) <= 0.00001 or self.vy <= 1:
+            self.vx = randint(-8, 8) / randint(1, 4)
+            self.vy = randint(1, 8) / randint(1, 4)
 
     def update(self, *args):
         global score
@@ -185,6 +220,7 @@ class Ball(pygame.sprite.Sprite):
                     self.rect.y += self.vy
                 elif self.rect.y < player.rect.y:
                     score += abs(self.vx) + abs(self.vy)
+                    score = round(score, 2)
                     all_sprites.remove(self)
 
 
@@ -195,19 +231,33 @@ def draw(screen):
     text = font.render(str(score), True, (100, 255, 100))
     screen.blit(text, (0, 0))
     if mode == 'На время':
-        text = font.render(str(120 - (datetime.now() - start_time).seconds), True, (100, 255, 100))
+        text = font.render(str(TIME - (datetime.now() - start_time).seconds), True, (100, 255, 100))
         screen.blit(text, (WIDTH - text.get_width(), 0))
 
+def how_much_balls(level, player_cnt_balls):
+    if level == LEVELS[0]:
+        return 2
+    elif level == LEVELS[1]:
+        return 5
+    elif level == LEVELS[2]:
+        return 10
+    elif level == LEVELS[3]:
+        return player_cnt_balls
 
-mode = start_screen()
+mode, level, cnt = start_screen()
 
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 
 player = Player()
-Ball()
 
 fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+
+cnt_balls = how_much_balls(level, cnt)
+
+while len(all_sprites) < cnt_balls:
+    Ball()
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -220,13 +270,16 @@ while True:
     all_sprites.draw(screen)
     player_group.draw(screen)
     pygame.display.flip()
-    if len(all_sprites) == 0:
+    while len(all_sprites) < cnt_balls:
         Ball()
     clock.tick(FPS)
-    if mode == 'На время' and (datetime.now() - start_time).seconds >= 3:
+    if mode == 'На время' and (datetime.now() - start_time).seconds >= TIME:
         con = sqlite3.connect('my_tries.sql.db')
         cur = con.cursor()
         cur.execute('''INSERT INTO information(level, mode, score) VALUES (1, 1, ?)''', (score, ))
         con.commit()
         con.close()
-        final_screen()
+        mode, level, cnt_balls_tmp = final_screen()
+        cnt_balls = how_much_balls(level, cnt_balls_tmp)
+        for i in all_sprites:
+            all_sprites.remove(i)
