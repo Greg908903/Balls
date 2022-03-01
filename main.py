@@ -1,4 +1,5 @@
 import pygame
+import math
 import pygame_gui
 from random import randint, choice
 import sys
@@ -20,7 +21,7 @@ field = [[0] * 10 for i in range(10)]
 
 LEVELS = ['Легко', 'Средне', 'Сложно', 'Ввести количество шаров']
 MODES = ['На время', 'Бесконечный']
-TIME = 10
+TIME = 120
 
 
 def terminate():
@@ -221,6 +222,8 @@ class Player(pygame.sprite.Sprite):
                         self.rect.x += 3
                     else:
                         self.rect.x -= 3
+                    if self.rect.x < 0 or self.rect.x + self.rect.width > WIDTH:
+                        self.rect = past_rect
             return
         if args and args[0].type == pygame.KEYDOWN:
             if args[0].key == pygame.K_LEFT:
@@ -246,11 +249,14 @@ class Ball(pygame.sprite.Sprite):
                            (self.radius, self.radius), self.radius)
         self.rect = self.image.get_rect().move(0, 0)
         self.mask = pygame.mask.from_surface(self.image)
-        self.vx = 0
         self.vy = 0
-        while abs(self.vx) <= 0.00001 or self.vy <= 1:
-            self.vx = randint(-8, 8) / randint(1, 4)
-            self.vy = randint(1, 8) / randint(1, 4)
+        self.vx = 0
+        self.rect.x = randint(0, WIDTH - self.radius)
+        while self.vy <= 1.00001 or self.vx <= 1.000001:
+            self.v = randint(8, 40) / 4
+            self.angle = (randint(10, 170)) / 180 * math.pi
+            self.vx = self.v * math.cos(self.angle)
+            self.vy = self.v * math.sin(self.angle)
 
     def update(self, *args):
         global score
