@@ -100,18 +100,18 @@ def start_screen():
     global start_time
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
-    start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 300), (150, 75)),
+    start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 125, 300), (250, 75)),
                                                 text='Начать игру',
                                                 manager=manager)
     cnt_mode = 0
-    mode_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 380), (150, 75)),
+    mode_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 125, 380), (250, 75)),
                                                text=MODES[cnt_mode],
                                                manager=manager)
     cnt_level = 0
-    level_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 75, 460), (150, 75)),
+    level_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 125, 460), (250, 75)),
                                                 text=LEVELS[cnt_level],
                                                 manager=manager)
-    inp_cnt_balls = pygame_gui.elements.UITextEntryLine(relative_rect=pygame.Rect((WIDTH // 2 + 80, 460), (150, 75)),
+    inp_cnt_balls = pygame_gui.elements.UITextEntryLine(relative_rect=pygame.Rect((WIDTH // 2 + 130, 460), (150, 75)),
                                                         manager=manager)
     time_delta = clock.tick(FPS) / 1000.0
     while True:
