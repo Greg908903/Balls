@@ -173,6 +173,7 @@ def pause_screen():
                     return_button.kill()
                     go_to_start.kill()
                     start_time = datetime.now() - delta_time
+                    player.reset()
                     return
                 elif event.ui_element == exit_button:
                     terminate()
@@ -180,6 +181,7 @@ def pause_screen():
                     go_to_start.kill()
                     return_button.kill()
                     exit_button.kill()
+                    player.reset()
                     return start_screen()
             manager.process_events(event)
         manager.update(time_delta)
@@ -197,12 +199,18 @@ class Player(pygame.sprite.Sprite):
         self.move_left = 0
         self.move_right = 0
 
+    def reset(self, reset_pos=False):
+        self.move_left = 0
+        self.move_right = 0
+        if reset_pos:
+            self.rect = self.image.get_rect().move(100, 800)
+
     def update(self, *args):
         if args and args[0] == 'move':
             past_rect = self.rect.copy()
-            if self.move_left:
+            if self.move_left and self.rect.x >= 3:
                 self.rect.x -= 3
-            if self.move_right:
+            if self.move_right and self.rect.x + self.rect.width + 3 <= WIDTH:
                 self.rect.x += 3
             tmp = pygame.sprite.spritecollide(player, all_sprites, collided=pygame.sprite.collide_mask, dokill=False)
             if tmp:
@@ -349,7 +357,12 @@ while True:
         cur.execute('''INSERT INTO information(level, mode, score) VALUES (1, 1, ?)''', (score,))
         con.commit()
         con.close()
+        pause_button.kill()
         mode, level, cnt_balls_tmp = final_screen()
         cnt_balls = how_much_balls(level, cnt_balls_tmp)
         for i in all_sprites:
             all_sprites.remove(i)
+        pause_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((WIDTH // 2 - 50, 0), (100, 40)),
+                                                    text='Пауза',
+                                                    manager=manager)
+        player.reset(True)
