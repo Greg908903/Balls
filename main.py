@@ -194,7 +194,7 @@ def pause_screen():
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(player_group)
-        self.image = pygame.transform.scale(load_image('bucket.png', -1), (50, 60))
+        self.image = pygame.transform.scale(load_image('bucket1.png', -1), (50, 60))
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect().move(100, 800)
         self.move_left = 0
@@ -271,12 +271,12 @@ class Ball(pygame.sprite.Sprite):
                 self.rect.y += self.vy
                 self.rect.x += self.vx
             else:
-                if player.rect.x - self.rect.x > self.radius:
+                if player.rect.x - self.rect.x >= self.radius:
                     if self.vx > 0:
                         self.vx *= -1
                     self.rect.x += self.vx
                     self.rect.y += self.vy
-                elif (player.rect.x + player.rect.width) - self.rect.x < self.radius:
+                elif (player.rect.x + player.rect.width) - self.rect.x <= self.radius:
                     if self.vx < 0:
                         self.vx *= -1
                     self.rect.x += self.vx
@@ -336,6 +336,7 @@ while True:
                 pause_button.kill()
                 tmp = pause_screen()
                 if tmp is not None:
+                    score = 0
                     mode, level, cnt_balls_tmp = tmp
                     cnt_balls = how_much_balls(level, cnt_balls_tmp)
                     for i in all_sprites:
